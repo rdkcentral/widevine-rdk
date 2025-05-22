@@ -386,16 +386,6 @@ public:
 #if defined(DEBUG)
 	ENT_WV;
 #endif
-       _adminLock.Lock();
-
-        SessionMap::iterator index (_sessions.find(session_id));
-
-        if (index != _sessions.end()) {
-             index->second->onKeyStatusChange();
-        }
-
-        _adminLock.Unlock();
-
 #if defined(DEBUG)
 	EXT_WV;
 #endif
