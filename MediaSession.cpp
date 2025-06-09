@@ -225,6 +225,15 @@ MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
 MediaKeySession::~MediaKeySession(void) {
   Close();
 #ifdef USE_SVP
+  m_stSecureBuffInfo.bReleaseSecureMemRegion = true;
+  if(0 != svp_release_secure_buffers(m_pSVPContext, (void*)&m_stSecureBuffInfo, nullptr, nullptr, 0)) {
+    fprintf(stderr, "[%s:%d]  secure memory, free failed",__FUNCTION__,__LINE__);
+  }
+  else {
+    m_stSecureBuffInfo.bCreateSecureMemRegion = false;
+    m_stSecureBuffInfo.SecureMemRegionSize = 0;
+  }
+
   gst_svp_ext_free_context(m_pSVPContext);
 #endif
 }
@@ -540,18 +549,6 @@ CDMi_RESULT MediaKeySession::Close(void) {
   ENT_WV;
 #endif
   CDMi_RESULT status = CDMi_S_FALSE;
-
-#if defined(USE_SVP)
-  m_stSecureBuffInfo.bReleaseSecureMemRegion = true;
-  if(0 != svp_release_secure_buffers(m_pSVPContext, (void*)&m_stSecureBuffInfo, nullptr, nullptr, 0))
-  {
-      fprintf(stderr, "[%s:%d]  secure memory, free failed",__FUNCTION__,__LINE__);
-  }
-  else {
-      m_stSecureBuffInfo.bCreateSecureMemRegion = false;
-      m_stSecureBuffInfo.SecureMemRegionSize = 0;
-  }
-#endif
 
   g_lock.Lock();
   if (widevine::Cdm::kSuccess == m_cdm->close(m_sessionId)) {
