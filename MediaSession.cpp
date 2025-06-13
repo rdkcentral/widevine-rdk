@@ -903,16 +903,22 @@ CDMi_RESULT MediaKeySession::Decrypt(
 #endif
 	    }
 
+#ifdef USE_SVP
+      if (useSVP) {
+        m_stSecureBuffInfo.bReleaseSecureMemRegion = false;
+        // Free decrypted secure buffer.
+        svp_release_secure_buffers(m_pSVPContext, (void*)&m_stSecureBuffInfo, nullptr, nullptr, 0);
+      }
+#endif
     }
   }
 
+ErrorExit:
   g_lock.Unlock();
 #if defined(DEBUG)
   cout << "\n[RDK_LOG:" << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << "] status: " << status << endl;
   EXT_WV;
 #endif
-
-ErrorExit:
   return status;
 }
 
