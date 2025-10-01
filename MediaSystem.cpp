@@ -152,6 +152,19 @@ public:
         Config config;
         config.FromString(configline);
 
+        { // Set a base path for IStorage such as cert.bin and usgtable.bin
+            string basePath;
+            if( shell->PersistentPath().back() == '/' ) {
+                basePath = string(shell->PersistentPath() + "wv.storage");
+            } else {
+                basePath = string(shell->PersistentPath() + "/wv.storage");
+            }
+
+            TRACE_L1("BasePath %s\n", basePath.c_str());
+            Core::Directory(basePath.c_str()).CreatePath();
+            _host.SetBasePath(basePath);
+        }
+
         if (config.Product.IsSet() == true) {
             client_info.product_name = config.Product.Value();
         } else {
@@ -195,16 +208,6 @@ public:
 
         if (config.Keybox.IsSet() == true) {
             Core::SystemInfo::SetEnvironment("WIDEVINE_KEYBOX_PATH", config.Keybox.Value().c_str());
-        }
-
-        if (config.Certificate.IsSet() == true) {
-            Core::DataElementFile dataBuffer(config.Certificate.Value(), Core::File::USER_READ);
-
-            if(dataBuffer.IsValid() == false) {
-                TRACE_L1(_T("Failed to open %s"), config.Certificate.Value().c_str());
-            } else {
-                _host.PreloadFile(_certificateFilename,  std::string(reinterpret_cast<const char*>(dataBuffer.Buffer()), dataBuffer.Size()));
-            }
         }
 
         if (widevine::Cdm::kSuccess == widevine::Cdm::initialize(
