@@ -34,10 +34,9 @@ find_package(WideVine REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 if(DEFINED WIDEVINE_BROADCOM)
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../)
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/broadcom)
     find_package(NEXUS)
     find_package(NXCLIENT)
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/broadcom)
     find_package(NexusWidevine)
 endif()
 
