@@ -141,9 +141,11 @@ MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
 #endif
 
   switch ((LicenseType)licenseType) {
+#if (WIDEVINE_VERSION < 17)
   case PersistentUsageRecord:
     m_licenseType = widevine::Cdm::kPersistentUsageRecord;
     break;
+#endif
   case PersistentLicense:
     m_licenseType = widevine::Cdm::kPersistentLicense;
     break;
@@ -594,12 +596,14 @@ CDMi_RESULT MediaKeySession::Init(
   ENT_WV;
 #endif
   switch ((LicenseType)licenseType) {
+#if (WIDEVINE_VERSION < 17)
   case PersistentUsageRecord:
     m_licenseType = widevine::Cdm::kPersistentUsageRecord;
 #if defined(DEBUG)
     cout << "\n[RDK_LOG]" << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << "\tPersistentUsageRecord: " << m_licenseType <<endl;
 #endif
     break;
+#endif
   case PersistentLicense:
     m_licenseType = widevine::Cdm::kPersistentLicense;
 #if defined(DEBUG)
