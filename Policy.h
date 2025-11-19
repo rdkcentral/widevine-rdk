@@ -18,7 +18,11 @@
 
 #include "string_conversions.h"
 
+#if (WIDEVINE_VERSION == 17) || (WIDEVINE_VERSION == 18)
+using namespace wvutil;
+#else
 using namespace wvcdm;
+#endif
 
 #if defined WIDEVINE_DEFAULT_SERVER_CERTIFICATE_SUPPORTED
 const std::string kDefaultServerCertificate = a2bs_hex(
