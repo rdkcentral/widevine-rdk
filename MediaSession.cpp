@@ -44,20 +44,6 @@ using namespace std;
 
 namespace CDMi {
 
-// Staging Provisioning Server
-const std::string kCpStagingProvisioningServerUrl =
-    "https://staging-www.sandbox.googleapis.com/"
-    "certificateprovisioning/v1/devicecertificates/create"
-    "?key=AIzaSyB-5OLKTx2iU5mko18DfdwK5611JIjbUhE";
-
-// URL for Google Provisioning Server.
-// The provisioning server supplies the certificate that is needed
-// to communicate with the License Server.
-const std::string kProvisioningServerUrl =
-    "https://www.googleapis.com/"
-    "certificateprovisioning/v1/devicecertificates/create"
-    "?key=AIzaSyB-5OLKTx2iU5mko18DfdwK5611JIjbUhE";
-
 #if defined WIDEVINE_DEFAULT_SERVER_CERTIFICATE_SUPPORTED
 // NOTE: Provider ID = widevine.com
 const std::string kCpProductionServiceCertificate = wvcdm::a2bs_hex(
@@ -97,7 +83,7 @@ static void sendPostRequest(std::string& request, std::string& response);
 static void sendPostRequest(std::string& request,
 std::string& response)
 {
-    std::string server_url = kProvisioningServerUrl;
+    std::string server_url = WV_PROV_SERVER_URL;
 
     response.clear();
 
@@ -141,9 +127,11 @@ MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
 #endif
 
   switch ((LicenseType)licenseType) {
+#if (WIDEVINE_VERSION < 17)
   case PersistentUsageRecord:
     m_licenseType = widevine::Cdm::kPersistentUsageRecord;
     break;
+#endif
   case PersistentLicense:
     m_licenseType = widevine::Cdm::kPersistentLicense;
     break;
@@ -594,12 +582,14 @@ CDMi_RESULT MediaKeySession::Init(
   ENT_WV;
 #endif
   switch ((LicenseType)licenseType) {
+#if (WIDEVINE_VERSION < 17)
   case PersistentUsageRecord:
     m_licenseType = widevine::Cdm::kPersistentUsageRecord;
 #if defined(DEBUG)
     cout << "\n[RDK_LOG]" << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << "\tPersistentUsageRecord: " << m_licenseType <<endl;
 #endif
     break;
+#endif
   case PersistentLicense:
     m_licenseType = widevine::Cdm::kPersistentLicense;
 #if defined(DEBUG)
@@ -887,6 +877,13 @@ CDMi_RESULT MediaKeySession::Decrypt(
           }
 		    } 
 
+#ifdef USE_SVP
+        if (useSVP) {
+          m_stSecureBuffInfo.bReleaseSecureMemRegion = false;
+          // Free decrypted secure buffer.
+          svp_release_secure_buffers(m_pSVPContext, (void*)&m_stSecureBuffInfo, nullptr, nullptr, 0);
+        }
+#endif
 		    status = CDMi_SUCCESS;
 #if defined(DEBUG)
 		    cout << "\n[RDK_LOG:" << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << "] decryption success..! and status: " << status << endl;
@@ -902,14 +899,6 @@ CDMi_RESULT MediaKeySession::Decrypt(
       }
 #endif
 	    }
-
-#ifdef USE_SVP
-      if (useSVP) {
-        m_stSecureBuffInfo.bReleaseSecureMemRegion = false;
-        // Free decrypted secure buffer.
-        svp_release_secure_buffers(m_pSVPContext, (void*)&m_stSecureBuffInfo, nullptr, nullptr, 0);
-      }
-#endif
     }
   }
 

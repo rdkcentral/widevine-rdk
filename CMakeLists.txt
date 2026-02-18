@@ -33,9 +33,26 @@ find_package(${NAMESPACE}Core REQUIRED)
 find_package(WideVine REQUIRED)
 find_package(OpenSSL REQUIRED)
 
+if(DEFINED WIDEVINE_BROADCOM)
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/broadcom)
+    find_package(NEXUS)
+    find_package(NXCLIENT)
+    find_package(NexusWidevine)
+endif()
+
 if(CMAKE_WIDEVINE_VERSION)
     message("CMAKE_WIDEVINE_VERSION is ${CMAKE_WIDEVINE_VERSION}")
     add_definitions(-DWIDEVINE_VERSION=${CMAKE_WIDEVINE_VERSION})
+endif()
+
+# WV_PROV_SERVER_URL_STRING must be a full provisioning URL and MUST include
+# a query parameter (e.g. "?key=XXXX"). MediaSession.cpp appends additional
+# parameters (e.g. "&signedRequest=") at runtime.
+if(DEFINED WV_PROV_SERVER_URL_STRING)
+    message(STATUS "WV_PROV_SERVER_URL_STRING is \"${WV_PROV_SERVER_URL_STRING}\"")
+    add_definitions(-DWV_PROV_SERVER_URL=\"${WV_PROV_SERVER_URL_STRING}\")
+else()
+    message(FATAL_ERROR "Mandatory WV_PROV_SERVER_URL_STRING is not defined")
 endif()
 
 set(DRM_PLUGIN_SOURCES
@@ -66,8 +83,8 @@ elseif(DEFINED WIDEVINE_AMLOGIC)
     target_link_libraries(${DRM_PLUGIN_NAME} PRIVATE ${OPENSSL_LIBRARIES} curl)
     message(STATUS "WIDEVINE_AMLOGIC is ON")
 elseif(DEFINED WIDEVINE_BROADCOM)
-    #target_link_libraries(${DRM_PLUGIN_NAME} PRIVATE NEXUS::NEXUS NXCLIENT::NXCLIENT NexusWidevine::NexusWidevine)
-    #message(STATUS "WIDEVINE_BROADCOM is ON")
+    target_link_libraries(${DRM_PLUGIN_NAME} PRIVATE NEXUS::NEXUS NXCLIENT::NXCLIENT NexusWidevine::NexusWidevine curl)
+    message(STATUS "WIDEVINE_BROADCOM is ON")
 endif()
 
 set_target_properties(${DRM_PLUGIN_NAME} PROPERTIES SUFFIX ".drm")

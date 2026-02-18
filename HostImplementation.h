@@ -32,7 +32,13 @@ namespace CDMi {
 class HostImplementation : 
   public widevine::Cdm::IStorage,
   public widevine::Cdm::IClock,
-  public widevine::Cdm::ITimer {
+  public widevine::Cdm::ITimer
+#if (WIDEVINE_VERSION == 18)
+  ,
+  public widevine::Cdm::ILogger {
+#else
+  {
+#endif
 
 private:
 
@@ -104,6 +110,12 @@ public:
   // ---------------------------------------------------------------------------
   virtual void setTimeout(int64_t delay_ms, IClient* client, void* context) OVERRIDE;
   virtual void cancel(IClient* client) OVERRIDE;
+
+#if (WIDEVINE_VERSION == 18)
+  // widevine::Cdm::ILogger implementation
+  // ---------------------------------------------------------------------------
+  void log(const std::string& message) override;;
+#endif
 
 private:
   WPEFramework::Core::TimerType<Timer> _timer;
