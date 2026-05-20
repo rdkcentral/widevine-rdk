@@ -709,7 +709,8 @@ CDMi_RESULT MediaKeySession::Decrypt(
 #endif
 
   memset(iv,0,16);
-  memcpy(iv,(char*)sampleInfo->iv, sampleInfo->ivLength);
+  size_t ivCopyLen = (sampleInfo->ivLength > sizeof(iv)) ? sizeof(iv) : sampleInfo->ivLength;
+  memcpy(iv,(char*)sampleInfo->iv, ivCopyLen);
 
   if (widevine::Cdm::kSuccess == m_cdm->getKeyStatuses(m_sessionId, &map)) {
 #if defined(DEBUG)
