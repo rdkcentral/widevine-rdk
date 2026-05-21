@@ -77,7 +77,7 @@ target_link_libraries(${DRM_PLUGIN_NAME}
             -lgstsvpext)
 
 if(DEFINED WIDEVINE_REALTEK)
-    target_link_libraries(${DRM_PLUGIN_NAME} PRIVATE liboec_ref_shared.so crypto curl ssl rt pthread)
+    target_link_libraries(${DRM_PLUGIN_NAME} PRIVATE liboemcrypto.so crypto curl ssl rt pthread)
     message(STATUS "WIDEVINE_REALTEK is ON")
 elseif(DEFINED WIDEVINE_AMLOGIC)
     target_link_libraries(${DRM_PLUGIN_NAME} PRIVATE ${OPENSSL_LIBRARIES} curl)
