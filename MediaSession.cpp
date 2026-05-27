@@ -743,6 +743,14 @@ CDMi_RESULT MediaKeySession::Decrypt(
     header = (void*)inData;
     pEncryptedDataStart = reinterpret_cast<uint8_t *>(gst_svp_header_get_start_of_data(m_pSVPContext, header));
     gst_svp_header_get_field(m_pSVPContext, header, SvpHeaderFieldName::DataSize, &actualEncDataLength);
+    // The SVP header arrives in-band from the IPC client. Reject a dataSize
+    // that exceeds the bytes the client actually delivered, otherwise
+    // svp_allocate_secure_buffers() memcpy()s past the end of inData.
+    uint32_t svpHeaderLen = static_cast<uint32_t>(pEncryptedDataStart - inData);
+    if (svpHeaderLen > inDataLength || actualEncDataLength > inDataLength - svpHeaderLen) {
+        fprintf(stderr, "[%s:%d] SVP header dataSize %u exceeds inDataLength %u\n", __FUNCTION__, __LINE__, actualEncDataLength, inDataLength);
+        goto ErrorExit;
+    }
   }
 
 #if defined(DEBUG)
@@ -863,6 +871,13 @@ CDMi_RESULT MediaKeySession::Decrypt(
           if (header)
           {
             gst_svp_header_set_field(m_pSVPContext, header, SvpHeaderFieldName::Type, TokenType::Handle);
+          }
+          if (actualEncDataLength < svp_token_size()) {
+            svp_buffer_free_token(secToken);
+            m_stSecureBuffInfo.bReleaseSecureMemRegion = false;
+            svp_release_secure_buffers(m_pSVPContext, (void*)&m_stSecureBuffInfo, nullptr, nullptr, 0);
+            status = CDMi_S_FALSE;
+            goto ErrorExit;
           }
           memcpy((uint8_t *)pEncryptedDataStart, secToken, svp_token_size());
           svp_buffer_free_token(secToken);
