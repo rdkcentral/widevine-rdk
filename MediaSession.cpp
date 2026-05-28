@@ -746,7 +746,7 @@ CDMi_RESULT MediaKeySession::Decrypt(
     // The SVP header arrives in-band from the IPC client. Reject a dataSize
     // that exceeds the bytes the client actually delivered, otherwise
     // svp_allocate_secure_buffers() memcpy()s past the end of inData.
-    uint32_t svpHeaderLen = static_cast<uint32_t>(pEncryptedDataStart - inData);
+    uint32_t svpHeaderLen = static_cast<uint32_t>(static_cast<const uint8_t*>(pEncryptedDataStart) - inData);
     if (svpHeaderLen > inDataLength || actualEncDataLength > inDataLength - svpHeaderLen) {
         fprintf(stderr, "[%s:%d] SVP header dataSize %u exceeds inDataLength %u\n", __FUNCTION__, __LINE__, actualEncDataLength, inDataLength);
         goto ErrorExit;
