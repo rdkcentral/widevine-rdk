@@ -115,6 +115,7 @@ MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
     , m_initDataType(widevine::Cdm::kCenc)
     , m_licenseType((widevine::Cdm::SessionType)licenseType)
     , m_sessionId("")
+    , m_piCallback(nullptr)
     , m_StreamType(Unknown)
 #if defined(USE_SVP)
     , m_pSVPContext(NULL)
@@ -294,6 +295,8 @@ void MediaKeySession::onMessage(widevine::Cdm::MessageType f_messageType, const 
   }
   message.append(f_message.c_str(),  f_message.size());
 
+  if (m_piCallback == nullptr)
+    return;
   m_piCallback->OnKeyMessage((const uint8_t*) message.c_str(), message.size(), (char*) destUrl.c_str());
 #if defined(DEBUG)
   EXT_WV;
@@ -361,6 +364,8 @@ void MediaKeySession::onKeyStatusChange()
         return;
     }
 
+    if (m_piCallback == nullptr)
+        return;
     for (const auto& pair : map) {
         const std::string& keyValue = pair.first;
         widevine::Cdm::KeyStatus keyStatus = pair.second;
@@ -421,6 +426,8 @@ void MediaKeySession::onKeyStatusError(widevine::Cdm::Status status) {
     errorStatus = "UnExpectedError";
     break;
   }
+  if (m_piCallback == nullptr)
+    return;
   m_piCallback->OnError(0, CDMi_S_FALSE, errorStatus.c_str());
 }
 
@@ -428,6 +435,8 @@ void MediaKeySession::onRemoveComplete() {
 #if defined(DEBUG)
     ENT_WV;
 #endif
+    if (m_piCallback == nullptr)
+        return;
     widevine::Cdm::KeyStatusMap map;
     if (widevine::Cdm::kSuccess == m_cdm->getKeyStatuses(m_sessionId, &map)) {
         for (const auto& pair : map) {
