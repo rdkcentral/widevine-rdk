@@ -719,6 +719,7 @@ CDMi_RESULT MediaKeySession::Decrypt(
 
   memset(iv,0,16);
   size_t ivCopyLen = (sampleInfo->ivLength > sizeof(iv)) ? sizeof(iv) : sampleInfo->ivLength;
+  assert(sampleInfo->ivLength > 0 && sampleInfo->ivLength <= sizeof(iv));
   memcpy(iv,(char*)sampleInfo->iv, ivCopyLen);
 
   if (widevine::Cdm::kSuccess == m_cdm->getKeyStatuses(m_sessionId, &map)) {
@@ -880,13 +881,6 @@ CDMi_RESULT MediaKeySession::Decrypt(
           if (header)
           {
             gst_svp_header_set_field(m_pSVPContext, header, SvpHeaderFieldName::Type, TokenType::Handle);
-          }
-          if (actualEncDataLength < svp_token_size()) {
-            svp_buffer_free_token(secToken);
-            m_stSecureBuffInfo.bReleaseSecureMemRegion = false;
-            svp_release_secure_buffers(m_pSVPContext, (void*)&m_stSecureBuffInfo, nullptr, nullptr, 0);
-            status = CDMi_S_FALSE;
-            goto ErrorExit;
           }
           memcpy((uint8_t *)pEncryptedDataStart, secToken, svp_token_size());
           svp_buffer_free_token(secToken);
