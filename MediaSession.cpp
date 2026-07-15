@@ -706,8 +706,13 @@ CDMi_RESULT MediaKeySession::Decrypt(
   void * header = NULL;
   void* secToken = NULL;
 
-  assert(sampleInfo->ivLength > 0 && sampleInfo->ivLength <= sizeof(iv));
-
+  if (sampleInfo->ivLength == 0 ||
+      sampleInfo->ivLength > sizeof(iv))
+  {
+    fprintf(stderr, "[%s:%d] Invalid iv len %u\n", __FUNCTION__, __LINE__, sampleInfo->ivLength);
+    goto ErrorExit;
+  }
+    
 #ifdef USE_SVP
   bIsDynamicSVPEncEnabled = svpIsDynamicSVPEncEnabled();
   if (bIsDynamicSVPEncEnabled)
@@ -774,9 +779,12 @@ CDMi_RESULT MediaKeySession::Decrypt(
 #ifdef USE_SVP
 
   if (useSVP) {
-
     /* Ensure that actualEncDataLength has enough space to accommodate the SVP token. */
-    assert(actualEncDataLength > svp_token_size());
+    if (actualEncDataLength < svp_token_size())
+    {
+      fprintf(stderr, "[%s:%d] Invalid encrypted data length %u (token size %u)\n", __FUNCTION__, __LINE__, actualEncDataLength, svp_token_size());
+      goto ErrorExit;
+    }
 
     // Reallocate input memory if needed.
     if(m_stSecureBuffInfo.bCreateSecureMemRegion)
