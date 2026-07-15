@@ -754,7 +754,7 @@ CDMi_RESULT MediaKeySession::Decrypt(
     pEncryptedDataStart = reinterpret_cast<uint8_t *>(gst_svp_header_get_start_of_data(m_pSVPContext, header));
     gst_svp_header_get_field(m_pSVPContext, header, SvpHeaderFieldName::DataSize, &actualEncDataLength);
 
-    /* Validate the expected inDatatLength */
+    /* Validate the expected inDataLength */
     if (inDataLength != (gst_svp_header_size(m_pSVPContext) + actualEncDataLength + svp_token_size()))
     {
       fprintf(stderr, "[%s:%d] Invalid inDataLength %u\n", __FUNCTION__, __LINE__, inDataLength);
