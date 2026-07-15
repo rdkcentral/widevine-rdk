@@ -706,6 +706,8 @@ CDMi_RESULT MediaKeySession::Decrypt(
   void * header = NULL;
   void* secToken = NULL;
 
+  assert(sampleInfo->ivLength > 0 && sampleInfo->ivLength <= sizeof(iv));
+
 #ifdef USE_SVP
   bIsDynamicSVPEncEnabled = svpIsDynamicSVPEncEnabled();
   if (bIsDynamicSVPEncEnabled)
@@ -718,9 +720,7 @@ CDMi_RESULT MediaKeySession::Decrypt(
 #endif
 
   memset(iv,0,16);
-  size_t ivCopyLen = (sampleInfo->ivLength > sizeof(iv)) ? sizeof(iv) : sampleInfo->ivLength;
-  assert(sampleInfo->ivLength > 0 && sampleInfo->ivLength <= sizeof(iv));
-  memcpy(iv,(char*)sampleInfo->iv, ivCopyLen);
+  memcpy(iv,(char*)sampleInfo->iv, sampleInfo->ivLength);
 
   if (widevine::Cdm::kSuccess == m_cdm->getKeyStatuses(m_sessionId, &map)) {
 #if defined(DEBUG)
@@ -753,14 +753,18 @@ CDMi_RESULT MediaKeySession::Decrypt(
     header = (void*)inData;
     pEncryptedDataStart = reinterpret_cast<uint8_t *>(gst_svp_header_get_start_of_data(m_pSVPContext, header));
     gst_svp_header_get_field(m_pSVPContext, header, SvpHeaderFieldName::DataSize, &actualEncDataLength);
-    // The SVP header arrives in-band from the IPC client. Reject a dataSize
-    // that exceeds the bytes the client actually delivered, otherwise
-    // svp_allocate_secure_buffers() memcpy()s past the end of inData.
-    uint32_t svpHeaderLen = static_cast<uint32_t>(static_cast<const uint8_t*>(pEncryptedDataStart) - inData);
-    if (svpHeaderLen > inDataLength || actualEncDataLength > inDataLength - svpHeaderLen) {
-        fprintf(stderr, "[%s:%d] SVP header dataSize %u exceeds inDataLength %u\n", __FUNCTION__, __LINE__, actualEncDataLength, inDataLength);
-        goto ErrorExit;
+
+    /* Validate the expected inDatatLength */
+    if (inDataLength != (gst_svp_header_size(m_pSVPContext) + actualEncDataLength + svp_token_size()))
+    {
+      fprintf(stderr, "[%s:%d] Invalid inDataLength %u\n", __FUNCTION__, __LINE__, inDataLength);
+      goto ErrorExit;		
     }
+  }
+  else
+  {
+    pEncryptedDataStart = inData;
+    actualEncDataLength = inDataLength;
   }
 
 #if defined(DEBUG)
@@ -770,6 +774,9 @@ CDMi_RESULT MediaKeySession::Decrypt(
 #ifdef USE_SVP
 
   if (useSVP) {
+
+    /* Ensure that actualEncDataLength has enough space to accommodate the SVP token. */
+    assert(actualEncDataLength > svp_token_size());
 
     // Reallocate input memory if needed.
     if(m_stSecureBuffInfo.bCreateSecureMemRegion)
