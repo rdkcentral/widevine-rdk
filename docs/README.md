@@ -57,9 +57,9 @@ classDef VL stroke:#808080,fill:#F2F2F2,stroke-width:2px;
 
 ## Design
 
-The component is designed as a shared library (`.drm` extension) loaded at runtime by the WPEFramework OCDM plugin. It implements the CDMi `IMediaKeys` interface in the `WideVine` class and the `IMediaKeySession` interface in `MediaKeySession`, with both classes residing in the `CDMi` namespace. A single `WideVine` instance owns the `widevine::Cdm` object and a session map (`std::map<std::string, MediaKeySession*>`) keyed by session ID. Each entry in the session map corresponds to one active decryption context.
+The component is designed as a shared library (`.drm` extension) loaded at runtime by the WPEFramework OCDM plugin. It implements the CDMi `IMediaKeys` interface in the `Widevine` class and the `IMediaKeySession` interface in `MediaKeySession`, with both classes residing in the `CDMi` namespace. A single `Widevine` instance owns the `widevine::Cdm` object and a session map (`std::map<std::string, MediaKeySession*>`) keyed by session ID. Each entry in the session map corresponds to one active decryption context.
 
-The initialization path in `WideVine::Initialize()` reads a JSON configuration block provided by the OCDM plugin, extracts product/company/model/device identifiers (with fallback to `/etc/device.properties`), optionally pre-loads a DRM certificate into the host storage, and calls `widevine::Cdm::initialize()` followed by `widevine::Cdm::create()`. The resulting CDM handle is retained for the lifetime of the plugin instance.
+The initialization path in `Widevine::Initialize()` reads a JSON configuration block provided by the OCDM plugin, extracts product/company/model/device identifiers (with fallback to `/etc/device.properties`), optionally pre-loads a DRM certificate into the host storage, and calls `widevine::Cdm::initialize()` followed by `widevine::Cdm::create()`. The resulting CDM handle is retained for the lifetime of the plugin instance.
 
 Northbound interaction with WPEFramework/Thunder is entirely through the CDMi interface. The OCDM plugin calls `CreateMediaKeySession()` to obtain an `IMediaKeySession`, then drives the license exchange by calling `Run()`, `Update()`, and `Decrypt()` on that session. JSON-RPC routing is handled entirely by the OCDM plugin layer; this component exposes only the CDMi interface.
 
@@ -73,7 +73,7 @@ graph LR
     subgraph WidevineDRM ["widevine-rdk (.drm plugin)"]
 
         subgraph MediaSystemLayer ["Media System"]
-            MS["WideVine\n(IMediaKeys)"]
+            MS["Widevine\n(IMediaKeys)"]
             SM["SessionMap"]
             AL["_adminLock"]
             MS --> SM
@@ -119,16 +119,16 @@ graph LR
 - **Worker Threads**:
   - _widevine (TimerType thread)_: Services timer expiry callbacks registered by the CDM library through `HostImplementation::setTimeout()`. Owned by the `HostImplementation` instance.
 - **Synchronization**:
-  - `_adminLock` (`WPEFramework::Core::CriticalSection`): Guards the `_sessions` map in the `WideVine` class against concurrent access from CDM event callbacks (`onMessage`, `onRemoveComplete`, `onDeferredComplete`, `onDirectIndividualizationRequest`).
+  - `_adminLock` (`WPEFramework::Core::CriticalSection`): Guards the `_sessions` map in the `Widevine` class against concurrent access from CDM event callbacks (`onMessage`, `onRemoveComplete`, `onDeferredComplete`, `onDirectIndividualizationRequest`).
   - `g_lock` (`WPEFramework::Core::CriticalSection`): Serializes individual CDM operations (`load`, `update`, `remove`, `close`, `decrypt`, `getKeyStatuses`) within `MediaKeySession`.
-- **Async / Event Dispatch**: CDM library callbacks (`onMessage`, `onRemoveComplete`, `onDeferredComplete`) arrive on the CDM's internal threads. The `WideVine` class routes them under `_adminLock` to the correct `MediaKeySession`, which then invokes the registered `IMediaKeySessionCallback` synchronously. Key status changes following a license update are dispatched synchronously from `MediaKeySession::Update()` via `onKeyStatusChange()`.
+- **Async / Event Dispatch**: CDM library callbacks (`onMessage`, `onRemoveComplete`, `onDeferredComplete`) arrive on the CDM's internal threads. The `Widevine` class routes them under `_adminLock` to the correct `MediaKeySession`, which then invokes the registered `IMediaKeySessionCallback` synchronously. Key status changes following a license update are dispatched synchronously from `MediaKeySession::Update()` via `onKeyStatusChange()`.
 
 ### Platform and Integration Requirements
 
 - **Build Dependencies**: `wpeframework`, `wpeframework-clientlibraries`, `wpeframework-tools-native`, `entservices-apis`, `gst-svp-ext`, `gstreamer1.0`, OpenSSL (`libssl`, `libcrypto`), `libcurl`, vendor Widevine CDM library (`widevine_ce_cdm_shared`), platform-specific Widevine adapter libraries (determined at build time via CMake platform flags).
 - **Plugin Dependencies**: The widevine-rdk `.drm` library is loaded dynamically by the WPEFramework OCDM plugin at runtime.
-- **Device Services / HAL**: The `gst-svp-ext` library provides the SVP platform interface. `svpPlatformInitializeWidevine()` is called once during `WideVine::Initialize()`.
-- **Configuration Files**: `/etc/device.properties` (operator name, model number, device name, YouTube cert scope). Keybox and certificate paths are supplied via the OCDM plugin's JSON configuration block.
+- **Device Services / HAL**: The `gst-svp-ext` library provides the SVP platform interface. `svpPlatformInitializeWidevine()` is called once during `Widevine::Initialize()`.
+- **Configuration Files**: `/etc/device.properties` (operator name, model number, YouTube cert scope; on Linux, device name defaults to `"Linux"` unless set in JSON config). Keybox and certificate paths are supplied via the OCDM plugin's JSON configuration block.
 - **Startup Order**: This component is activated by the OCDM plugin. Startup ordering follows the OCDM plugin's service unit configuration.
 
 ---
@@ -137,19 +137,19 @@ graph LR
 
 #### Initialization to Active State
 
-The component is initialized when the WPEFramework OCDM plugin loads the `.drm` shared library and calls through the `GetSystemFactory()` entry point. The factory returns a `WideVine` instance. On `Initialize()`, the component reads the JSON configuration, sets up client device identity, initializes the SVP platform, creates the Widevine CDM instance, and sets the YouTube certificate scope parameter.
+The component is initialized when the WPEFramework OCDM plugin loads the `.drm` shared library and calls through the `GetSystemFactory()` entry point. The factory returns a `Widevine` instance. On `Initialize()`, the component reads the JSON configuration, sets up client device identity, initializes the SVP platform, creates the Widevine CDM instance, and sets the YouTube certificate scope parameter.
 
 The component transitions through the following states: **Initializing** (parse JSON config, read device.properties) → **CDMSetup** (call `widevine::Cdm::initialize()` and `widevine::Cdm::create()`) → **Active** (handle `CreateMediaKeySession`, `Decrypt`, CDM event callbacks) → **Shutdown** (session map cleared, CDM instance deleted in destructor).
 
 ```mermaid
 sequenceDiagram
     participant OCDMPlugin as OCDM Plugin
-    participant WV as WideVine (MediaSystem)
+    participant WV as Widevine (MediaSystem)
     participant HI as HostImplementation
     participant CDM as Widevine CDM Library
     participant SVP as gst-svp-ext
 
-    OCDMPlugin->>WV: GetSystemFactory() → WideVine instance
+    OCDMPlugin->>WV: GetSystemFactory() → Widevine instance
     OCDMPlugin->>WV: Initialize(shell, configline)
 
     WV->>WV: Parse JSON config (certificate, keybox, product, company, model, device)
@@ -201,7 +201,7 @@ Once active, state changes within a session are driven by license exchange outco
 ```mermaid
 sequenceDiagram
     participant OCDMPlugin as OCDM Plugin
-    participant WV as WideVine
+    participant WV as Widevine
     participant CFG as JSON Config
     participant HI as HostImplementation
     participant CDM as Widevine CDM Library
@@ -233,7 +233,7 @@ The most representative call flow is the license acquisition sequence: a new ses
 sequenceDiagram
     participant Pipeline as Media Pipeline (Rialto)
     participant OCDMPlugin as OCDM Plugin
-    participant WV as WideVine
+    participant WV as Widevine
     participant MKS as MediaKeySession
     participant CDM as Widevine CDM Library
     participant LicSrv as License Server
@@ -267,7 +267,7 @@ sequenceDiagram
 
 | Module / Class       | Description                                                                                                                                                                                                                                                                                                                                                                    | Key Files                                        |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| `WideVine`           | Implements `IMediaKeys`, `widevine::Cdm::IEventListener`, and `IMediaSystemMetrics`. Owns the `widevine::Cdm` instance, the session map, and the `HostImplementation`. Routes CDM event callbacks to the appropriate `MediaKeySession` under `_adminLock`. Registered with the CDMi system factory for MIME types `video/webm`, `video/mp4`, `audio/webm`, `audio/mp4`.        | `MediaSystem.cpp`                                |
+| `Widevine`           | Implements `IMediaKeys`, `widevine::Cdm::IEventListener`, and `IMediaSystemMetrics`. Owns the `widevine::Cdm` instance, the session map, and the `HostImplementation`. Routes CDM event callbacks to the appropriate `MediaKeySession` under `_adminLock`. Registered with the CDMi system factory for MIME types `video/webm`, `video/mp4`, `audio/webm`, `audio/mp4`.        | `MediaSystem.cpp`                                |
 | `MediaKeySession`    | Implements `IMediaKeySession`. Manages the per-session lifecycle: initialization, license request generation, license response processing, key status reporting, and sample decryption. Holds the SVP context and secure buffer state when `USE_SVP` is active. Serializes CDM operations with `g_lock`.                                                                       | `MediaSession.cpp`, `MediaSession.h`             |
 | `HostImplementation` | Implements `widevine::Cdm::IStorage`, `widevine::Cdm::IClock`, `widevine::Cdm::ITimer`, and (for version 18) `widevine::Cdm::ILogger`. Provides the CDM library with an in-memory key-value file store, a millisecond timestamp from `WPEFramework::Core::Time::Now()`, and timer scheduling via `WPEFramework::Core::TimerType`.                                              | `HostImplementation.cpp`, `HostImplementation.h` |
 | `Policy`             | Compile-time constants used by `MediaKeySession`: the license server URL (`kLicenseServer`), an optional embedded default server certificate (`kDefaultServerCertificate`), and CENC init data constants. An additional production provisioning service certificate (`kCpProductionServiceCertificate`) is defined in `MediaSession.cpp` for use during the provisioning flow. | `Policy.h`, `MediaSession.cpp`                   |
@@ -303,7 +303,7 @@ sequenceDiagram
 
 **Primary Request / Response Flow:**
 
-The OCDM plugin dispatches calls synchronously to the WideVine CDMi interface. The component delegates to the CDM library and returns the result.
+The OCDM plugin dispatches calls synchronously to the Widevine CDMi interface. The component delegates to the CDM library and returns the result.
 
 ```mermaid
 sequenceDiagram
@@ -322,12 +322,12 @@ sequenceDiagram
 
 **Event Notification Flow:**
 
-CDM library callbacks (`onMessage`, `onRemoveComplete`, `onDeferredComplete`) arrive on CDM-internal threads. The `WideVine` class routes them under `_adminLock` to the corresponding session. Key status updates after a license exchange are dispatched directly from `MediaKeySession::Update()`.
+CDM library callbacks (`onMessage`, `onRemoveComplete`, `onDeferredComplete`) arrive on CDM-internal threads. The `Widevine` class routes them under `_adminLock` to the corresponding session. Key status updates after a license exchange are dispatched directly from `MediaKeySession::Update()`.
 
 ```mermaid
 sequenceDiagram
     participant CDM as Widevine CDM Library
-    participant WV as WideVine (MediaSystem)
+    participant WV as Widevine (MediaSystem)
     participant MKS as MediaKeySession
     participant CB as IMediaKeySessionCallback (OCDM Plugin)
 
@@ -380,7 +380,7 @@ sequenceDiagram
 
 ### Key Implementation Logic
 
-- **State / Lifecycle Management**: Session state is entirely implicit: the `WideVine` session map tracks live sessions, and the `MediaKeySession` destructor calls `Close()` to clean up the CDM session. Session creation with auto-provisioning is implemented inline in the `MediaKeySession` constructor (`MediaSession.cpp`).
+- **State / Lifecycle Management**: Session state is entirely implicit: the `Widevine` session map tracks live sessions, and the `MediaKeySession` destructor calls `Close()` to clean up the CDM session. Session creation with auto-provisioning is implemented inline in the `MediaKeySession` constructor (`MediaSession.cpp`).
 
 - **Provisioning Flow**: Provisioning is triggered when `createSession()` returns status `101` (`kNeedsDeviceCertificate`). The sequence is: optionally set a default provisioning service certificate → `getProvisioningRequest()` → HTTP GET via libcurl (signed request appended to the provisioning URL as a `&signedRequest=` query parameter) → `handleProvisioningResponse()` → retry `createSession()`. This flow is contained in `MediaSession.cpp`.
 
@@ -396,23 +396,23 @@ sequenceDiagram
 
 ### Key Configuration Files
 
-| Configuration File                       | Purpose                                                                                                           | Override Mechanism                                                              |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| OCDM plugin JSON config (Thunder config) | Supplies certificate path, keybox path, product/company/model/device identity strings to `WideVine::Initialize()` | Set via WPEFramework plugin configuration; parsed using `Core::JSON::Container` |
-| `/etc/device.properties`                 | Fallback source for `OPERATOR_NAME`, `MODEL_NUM`, `DEVICE_NAME`, `COBALT_CERT_SCOPE` when not set in JSON config  | Write to file; values are read on each `Initialize()` call                      |
+| Configuration File                       | Purpose                                                                                                                                   | Override Mechanism                                                              |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| OCDM plugin JSON config (Thunder config) | Supplies certificate path, keybox path, product/company/model/device identity strings to `Widevine::Initialize()`                         | Set via WPEFramework plugin configuration; parsed using `Core::JSON::Container` |
+| `/etc/device.properties`                 | Fallback source for `OPERATOR_NAME`, `MODEL_NUM`, `COBALT_CERT_SCOPE` (and `DEVICE_NAME` on non-Linux builds) when not set in JSON config | Write to file; values are read on each `Initialize()` call                      |
 
 ### Key Configuration Parameters
 
-| Parameter                                | Type   | Default                                       | Description                                                                                                                                                                                           |
-| ---------------------------------------- | ------ | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `certificate`                            | string | —                                             | Filesystem path to a pre-loaded DRM certificate file (`cert.bin`). Loaded into in-memory host storage before CDM initialization.                                                                      |
-| `keybox`                                 | string | —                                             | Filesystem path to the Widevine keybox. Set as the `WIDEVINE_KEYBOX_PATH` environment variable for the CDM library.                                                                                   |
-| `product`                                | string | `"WPEFramework"`                              | Product name reported to the CDM as `client_info.product_name`.                                                                                                                                       |
-| `company`                                | string | value of `OPERATOR_NAME` in device.properties | Company name reported to the CDM as `client_info.company_name`.                                                                                                                                       |
-| `model`                                  | string | value of `MODEL_NUM` in device.properties     | Model name reported to the CDM as `client_info.model_name`.                                                                                                                                           |
-| `device`                                 | string | `"Linux"`                                     | Device name reported to the CDM as `client_info.device_name`.                                                                                                                                         |
-| `WIDEVINE_VERSION` (build-time)          | int    | `16`                                          | Selects the Widevine CDM API version (16, 17, or 18). Derived from Yocto distro features (`widevine_v18` → 18, `widevine_v17` → 17, default → 16). Passed as `-DWIDEVINE_VERSION=<n>` at build time.  |
-| `WV_PROV_SERVER_URL_STRING` (build-time) | string | —                                             | Mandatory provisioning server base URL (must include a query parameter). Injected at build time as `-DWV_PROV_SERVER_URL`. The string `&signedRequest=` and the request body are appended at runtime. |
+| Parameter                                | Type   | Default                                       | Description                                                                                                                                                                                                                                                      |
+| ---------------------------------------- | ------ | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `certificate`                            | string | —                                             | Filesystem path to a pre-loaded DRM certificate file (`cert.bin`). Loaded into in-memory host storage before CDM initialization.                                                                                                                                 |
+| `keybox`                                 | string | —                                             | Filesystem path to the Widevine keybox. Set as the `WIDEVINE_KEYBOX_PATH` environment variable for the CDM library.                                                                                                                                              |
+| `product`                                | string | `"WPEFramework"`                              | Product name reported to the CDM as `client_info.product_name`.                                                                                                                                                                                                  |
+| `company`                                | string | value of `OPERATOR_NAME` in device.properties | Company name reported to the CDM as `client_info.company_name`.                                                                                                                                                                                                  |
+| `model`                                  | string | value of `MODEL_NUM` in device.properties     | Model name reported to the CDM as `client_info.model_name`.                                                                                                                                                                                                      |
+| `device`                                 | string | `"Linux"`                                     | Device name reported to the CDM as `client_info.device_name`.                                                                                                                                                                                                    |
+| `WIDEVINE_VERSION` (build-time)          | int    | `16`                                          | Selects the Widevine CDM API version (16, 17, or 18). Set via the CMake variable `CMAKE_WIDEVINE_VERSION` (which then defines `-DWIDEVINE_VERSION=<n>`). In Yocto builds, derived from distro features (`widevine_v18` → 18, `widevine_v17` → 17, default → 16). |
+| `WV_PROV_SERVER_URL_STRING` (build-time) | string | —                                             | Mandatory provisioning server base URL (must include a query parameter). Set via the CMake variable `WV_PROV_SERVER_URL_STRING` (which then defines `-DWV_PROV_SERVER_URL="<url>"`). The string `&signedRequest=` and the request body are appended at runtime.  |
 
 ### Runtime Configuration
 
