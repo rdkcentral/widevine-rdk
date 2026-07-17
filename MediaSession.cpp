@@ -115,6 +115,7 @@ MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
     , m_initDataType(widevine::Cdm::kCenc)
     , m_licenseType((widevine::Cdm::SessionType)licenseType)
     , m_sessionId("")
+    , m_piCallback(nullptr)
     , m_StreamType(Unknown)
 #if defined(USE_SVP)
     , m_pSVPContext(NULL)
@@ -294,6 +295,8 @@ void MediaKeySession::onMessage(widevine::Cdm::MessageType f_messageType, const 
   }
   message.append(f_message.c_str(),  f_message.size());
 
+  if (m_piCallback == nullptr)
+    return;
   m_piCallback->OnKeyMessage((const uint8_t*) message.c_str(), message.size(), (char*) destUrl.c_str());
 #if defined(DEBUG)
   EXT_WV;
@@ -361,6 +364,8 @@ void MediaKeySession::onKeyStatusChange()
         return;
     }
 
+    if (m_piCallback == nullptr)
+        return;
     for (const auto& pair : map) {
         const std::string& keyValue = pair.first;
         widevine::Cdm::KeyStatus keyStatus = pair.second;
@@ -421,6 +426,8 @@ void MediaKeySession::onKeyStatusError(widevine::Cdm::Status status) {
     errorStatus = "UnExpectedError";
     break;
   }
+  if (m_piCallback == nullptr)
+    return;
   m_piCallback->OnError(0, CDMi_S_FALSE, errorStatus.c_str());
 }
 
@@ -428,6 +435,8 @@ void MediaKeySession::onRemoveComplete() {
 #if defined(DEBUG)
     ENT_WV;
 #endif
+    if (m_piCallback == nullptr)
+        return;
     widevine::Cdm::KeyStatusMap map;
     if (widevine::Cdm::kSuccess == m_cdm->getKeyStatuses(m_sessionId, &map)) {
         for (const auto& pair : map) {
@@ -697,6 +706,13 @@ CDMi_RESULT MediaKeySession::Decrypt(
   void * header = NULL;
   void* secToken = NULL;
 
+  if (sampleInfo->ivLength == 0 ||
+      sampleInfo->ivLength > sizeof(iv))
+  {
+    fprintf(stderr, "[%s:%d] Invalid iv len %u\n", __FUNCTION__, __LINE__, sampleInfo->ivLength);
+    goto ErrorExit;
+  }
+    
 #ifdef USE_SVP
   bIsDynamicSVPEncEnabled = svpIsDynamicSVPEncEnabled();
   if (bIsDynamicSVPEncEnabled)
@@ -742,6 +758,18 @@ CDMi_RESULT MediaKeySession::Decrypt(
     header = (void*)inData;
     pEncryptedDataStart = reinterpret_cast<uint8_t *>(gst_svp_header_get_start_of_data(m_pSVPContext, header));
     gst_svp_header_get_field(m_pSVPContext, header, SvpHeaderFieldName::DataSize, &actualEncDataLength);
+
+    /* Validate the expected inDataLength */
+    if (inDataLength != (gst_svp_header_size(m_pSVPContext) + actualEncDataLength + svp_token_size()))
+    {
+      fprintf(stderr, "[%s:%d] Invalid inDataLength %u\n", __FUNCTION__, __LINE__, inDataLength);
+      goto ErrorExit;		
+    }
+  }
+  else
+  {
+    pEncryptedDataStart = inData;
+    actualEncDataLength = inDataLength;
   }
 
 #if defined(DEBUG)
@@ -751,6 +779,12 @@ CDMi_RESULT MediaKeySession::Decrypt(
 #ifdef USE_SVP
 
   if (useSVP) {
+    /* Ensure that actualEncDataLength has enough space to accommodate the SVP token. */
+    if (actualEncDataLength < svp_token_size())
+    {
+      fprintf(stderr, "[%s:%d] Invalid encrypted data length %u (token size %u)\n", __FUNCTION__, __LINE__, actualEncDataLength, svp_token_size());
+      goto ErrorExit;
+    }
 
     // Reallocate input memory if needed.
     if(m_stSecureBuffInfo.bCreateSecureMemRegion)
