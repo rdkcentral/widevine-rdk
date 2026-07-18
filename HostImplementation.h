@@ -90,7 +90,10 @@ public:
 public:
 
   // note this method is not thread safe regarding simultanious widevine::Cdm::IStorage callbacks, make sure they cannot be not active when calling this
-  void PreloadFile(const std::string& filename, std::string&& filecontent );
+  void PreloadFile(const std::string& filename, string&& filecontent); /* deprecated */
+  void SetBasePath(const std::string& basepath);
+  bool readFromeFile(const std::string& name, std::string* data);
+  bool writeToFile(const std::string& name, const std::string& data);
 
   //
   // widevine::Cdm::IStorage implementation
@@ -119,7 +122,8 @@ public:
 
 private:
   WPEFramework::Core::TimerType<Timer> _timer;
-  StorageMap _files;
+  StorageMap _cache;
+  string _basepath;
 };
 
 } // namespace CDMi
