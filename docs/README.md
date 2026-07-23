@@ -45,7 +45,7 @@ classDef VL stroke:#808080,fill:#F2F2F2,stroke-width:2px;
 
 **Key Features & Responsibilities:**
 
-- **Device Provisioning**: When a new session is created and the CDM reports that a device certificate is absent, the component generates a provisioning request, sends it to the provisioning server over HTTPS using libcurl, and processes the response to provision the device before retrying session creation.
+- **Device Provisioning**: When a new session is created and the CDM reports that a device certificate is absent, the component generates a provisioning request, sends it to the provisioning server over HTTP(S) using libcurl, and processes the response to provision the device before retrying session creation.
 - **License Acquisition**: Each `MediaKeySession` drives the Widevine license exchange by calling `generateRequest()` on the CDM, forwarding the resulting license message to the caller via `OnKeyMessage()`, and processing the license server response via `Update()`.
 - **Content Decryption**: The `Decrypt()` method constructs a `widevine::Cdm::DecryptionBatch` from incoming sample metadata (IV, key ID, subsamples, encryption scheme) and delegates decryption to `m_cdm->decrypt()`, supporting both AES-CTR (CENC/CENS) and AES-CBC (CBC1/CBCS) encryption schemes.
 - **Secure Video Path (SVP)**: When SVP is enabled, decryption output is directed into a hardware-protected secure memory region allocated through `gst-svp-ext`. An SVP token is written back into the output buffer header so downstream pipeline stages can access the protected buffer without exposing cleartext video data in regular memory.
