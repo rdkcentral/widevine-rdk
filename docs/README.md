@@ -388,7 +388,7 @@ sequenceDiagram
 
 - **Error Handling Strategy**: CDM error codes are mapped to CDMi string tokens (`NeedsDeviceCertificate`, `SessionNotFound`, `DecryptError`, `TypeError`, `QuotaExceeded`, `NotSupported`, `UnExpectedError`) and forwarded via `IMediaKeySessionCallback::OnError()`. Decryption failures are logged to stdout with `[RDK_LOG]` prefix. Decryption error recovery is delegated to the calling layer.
 
-- **Logging & Diagnostics**: All log output uses `std::cout` with `[RDK_LOG]` prefix and is gated on the `DEBUG` preprocessor macro (disabled by default). Entry and exit of functions are traced with `ENT_WV` / `EXT_WV` macros when `DEBUG` is defined. The module name for WPEFramework tracing is `OCDM_Widevine` (defined in `Module.h`). WPEFramework `TRACE_L1` is used in `HostImplementation.cpp` for storage operation traces.
+- **Logging & Diagnostics**: Most log output uses `std::cout` with `[RDK_LOG]` prefix and is gated on the `DEBUG` preprocessor macro (disabled by default), but some SVP-related messages are printed unconditionally. Entry and exit of functions are traced with `ENT_WV` / `EXT_WV` macros when `DEBUG` is defined. The module name for WPEFramework tracing is `OCDM_Widevine` (defined in `Module.h`). WPEFramework `TRACE_L1` is used in `HostImplementation.cpp` for storage operation traces.
 
 ---
 
@@ -411,14 +411,14 @@ sequenceDiagram
 | `company`                                | string | value of `OPERATOR_NAME` in device.properties | Company name reported to the CDM as `client_info.company_name`.                                                                                                                                                                                                  |
 | `model`                                  | string | value of `MODEL_NUM` in device.properties     | Model name reported to the CDM as `client_info.model_name`.                                                                                                                                                                                                      |
 | `device`                                 | string | `"Linux"`                                     | Device name reported to the CDM as `client_info.device_name`.                                                                                                                                                                                                    |
-| `WIDEVINE_VERSION` (build-time)          | int    | `16`                                          | Selects the Widevine CDM API version (16, 17, or 18). Set via the CMake variable `CMAKE_WIDEVINE_VERSION` (which then defines `-DWIDEVINE_VERSION=<n>`). In Yocto builds, derived from distro features (`widevine_v18` → 18, `widevine_v17` → 17, default → 16). |
+| `WIDEVINE_VERSION` (build-time)          | int    | v16 code path (implicit if undefined)        | Selects the Widevine CDM API version (16, 17, or 18). Set via the CMake variable `CMAKE_WIDEVINE_VERSION` (which then defines `-DWIDEVINE_VERSION=<n>`). If not defined, the preprocessor treats it as `0` and the build compiles the `<17` (v16) code path; define it explicitly for Widevine CDM versions 17 or 18. In Yocto builds, this is typically derived from distro features (`widevine_v18` → 18, `widevine_v17` → 17, otherwise v16). |
 | `WV_PROV_SERVER_URL_STRING` (build-time) | string | —                                             | Mandatory provisioning server base URL (must include a query parameter). Set via the CMake variable `WV_PROV_SERVER_URL_STRING` (which then defines `-DWV_PROV_SERVER_URL="<url>"`). The string `&signedRequest=` and the request body are appended at runtime.  |
 
 ### Runtime Configuration
 
 The CDM session's stream metadata can be updated at runtime through `MediaKeySession::SetParameter()`:
 
-```bash
+```text
 # Set media type (drives SVP stream type selection)
 SetParameter("mediaType", "video/mp4")
 
