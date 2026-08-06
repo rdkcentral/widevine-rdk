@@ -123,7 +123,7 @@ public:
 private:
   WPEFramework::Core::TimerType<Timer> _timer;
   StorageMap _cache;
-  string _basepath;
+  std::string _basepath;
 };
 
 } // namespace CDMi

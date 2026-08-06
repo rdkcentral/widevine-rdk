@@ -90,7 +90,7 @@ bool HostImplementation::writeToFile(const std::string& name, const std::string&
   TRACE_L1("name %s read from file", name.c_str());
   if(readFromeFile(name, data))
   {
-      TRACE_L1("name %s read and update cache %d", name.c_str(), data->size());
+      TRACE_L1("name %s read and update cache %zu", name.c_str(), data->size());
       _cache.emplace(name, std::string(reinterpret_cast<const char*>(data->data()), data->size()));
       return true;
   } else {
@@ -103,7 +103,7 @@ bool HostImplementation::writeToFile(const std::string& name, const std::string&
   TRACE_L1("write: %s", name.c_str());
   _cache[name] = data;
   if(writeToFile(name, data)) {
-      TRACE_L1("sucess to write back %s.", name.c_str());
+      TRACE_L1("success to write back %s.", name.c_str());
       return true;
   } else {
       TRACE_L1("fail to write back %s!", name.c_str());
@@ -152,7 +152,7 @@ bool HostImplementation::writeToFile(const std::string& name, const std::string&
   
   // When name contains a wild card
   if (name.find("*") != string::npos) {
-    TRACE_L1("remove %s with wildcard", name);
+    TRACE_L1("remove %s with wildcard", name.c_str());
     DIR *Directory = opendir(_basepath.c_str());
     if (Directory == NULL)
       return false;
