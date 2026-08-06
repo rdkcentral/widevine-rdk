@@ -687,6 +687,7 @@ CDMi_RESULT MediaKeySession::Decrypt(
         uint8_t**                outData,         // Outgoing decrypted data
         uint32_t*                outDataLength,   // Outgoing decrypted data length
         const SampleInfo*        sampleInfo,      // Information required to decrypt Sample
+        const uint16_t           sampleCount,
         const IStreamProperties* properties)
 {
   g_lock.Lock();
@@ -706,6 +707,10 @@ CDMi_RESULT MediaKeySession::Decrypt(
   void * header = NULL;
   void* secToken = NULL;
 
+  if (sampleCount > 1) {
+    fprintf(stderr, "Multidecrypt not supported, number of samples: %d\n", sampleCount);
+    goto ErrorExit;
+  }
   if (sampleInfo->ivLength == 0 ||
       sampleInfo->ivLength > sizeof(iv))
   {

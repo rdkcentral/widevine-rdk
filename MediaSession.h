@@ -72,6 +72,7 @@ public:
         uint8_t**                outData,         // Outgoing decrypted data
         uint32_t*                outDataLength,   // Outgoing decrypted data length
         const SampleInfo*        sampleInfo,      // Information required to decrypt Sample
+        const uint16_t           sampleCount,
         const IStreamProperties* properties);
 
     virtual CDMi_RESULT ReleaseClearContent(
