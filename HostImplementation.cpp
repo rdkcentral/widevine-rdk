@@ -201,7 +201,7 @@ bool HostImplementation::writeToFile(const std::string& name, const std::string&
   // A specific name
   StorageMap::iterator it = _cache.find(name);
   if(it != _cache.end()) {
-      TRACE_L1("remove %s from cache", name);
+      TRACE_L1("remove %s from cache", name.c_str());
       _cache.erase(name);
   }
 
