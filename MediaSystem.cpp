@@ -155,9 +155,9 @@ public:
         { // Set a base path for IStorage such as cert.bin and usgtable.bin
             const string persistentPath = shell->PersistentPath();
             const bool hasTrailingSlash = (!persistentPath.empty() && (persistentPath.back() == '/'));
-            basePath = persistentPath + (hasTrailingSlash ? "wv.storage" : "/wv.storage");
+            const string basePath = persistentPath + (hasTrailingSlash ? "wv.storage" : "/wv.storage");
 
-            TRACE_L1("BasePath %s\n", basePath.c_str());
+            TRACE_L1("BasePath %s", basePath.c_str());
             Core::Directory(basePath.c_str()).CreatePath();
             _host.SetBasePath(basePath);
         }

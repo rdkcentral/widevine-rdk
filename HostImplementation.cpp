@@ -18,8 +18,12 @@
  */
 
 #include "HostImplementation.h"
-#include <fstream>
 
+#include <dirent.h>
+#include <fnmatch.h>
+#include <fstream>
+#include <sys/stat.h>
+#include <unistd.h>
 using namespace widevine;
 using namespace WPEFramework;
 
@@ -50,15 +54,30 @@ void HostImplementation::PreloadFile(const std::string& filename, std::string&& 
 }
 
 bool HostImplementation::readFromeFile(const std::string& name, std::string* data) {
-  struct stat Stat;
-  string filePath(_basepath + '/' + name);
-  if (stat(filePath.c_str(), &Stat) < 0)
+  if (data == nullptr) {
     return false;
-  
+  }
+
+  struct stat Stat;
+  const std::string filePath(_basepath + '/' + name);
+  if (stat(filePath.c_str(), &Stat) < 0) {
+    return false;
+  }
+
   std::ifstream File(filePath, std::ios::binary | std::ios::in);
-  data->resize(Stat.st_size);
-  File.read(&(*data)[0], data->size());
-  return true;
+  if (!File.is_open()) {
+    return false;
+  }
+
+  data->resize(static_cast<size_t>(Stat.st_size));
+  if (!data->empty()) {
+    File.read(&(*data)[0], data->size());
+    if (File.gcount() != static_cast<std::streamsize>(data->size())) {
+      return false;
+    }
+  }
+
+  return File.good();
 }
 
 bool HostImplementation::writeToFile(const std::string& name, const std::string& data) {
@@ -139,8 +158,12 @@ bool HostImplementation::writeToFile(const std::string& name, const std::string&
         return false;
 
       struct dirent *Entry;
-      while (Entry = readdir(Directory), Entry != NULL) {
-        string filePath(_basepath + '/' + Entry->d_name);
+      while ((Entry = readdir(Directory)) != NULL) {
+        const std::string entryName(Entry->d_name);
+        if ((entryName == ".") || (entryName == "..")) {
+          continue;
+        }
+        std::string filePath(_basepath + '/' + Entry->d_name);
         TRACE_L1("remove %s", filePath.c_str());
         unlink(filePath.c_str());
       }
@@ -201,8 +224,8 @@ bool HostImplementation::writeToFile(const std::string& name, const std::string&
     TRACE_L1("name %s not found", name.c_str());
     return -1;
   } else {
-    TRACE_L1("name %s found, size %d", name.c_str(), Stat.st_size);
-    return Stat.st_size;
+    TRACE_L1("name %s found, size %lld", name.c_str(), static_cast<long long>(Stat.st_size));
+    return static_cast<int32_t>(Stat.st_size);
   }
 }
 
@@ -213,7 +236,11 @@ bool HostImplementation::writeToFile(const std::string& name, const std::string&
 
   names->clear();
   struct dirent *Entry;
-  while (Entry = readdir(Directory), Entry != NULL) {
+  while ((Entry = readdir(Directory)) != NULL) {
+    const std::string entryName(Entry->d_name);
+    if ((entryName == ".") || (entryName == "..")) {
+      continue;
+    }
     TRACE_L1("name %s add to list", Entry->d_name);
     names->push_back(Entry->d_name);
   }
