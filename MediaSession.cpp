@@ -122,6 +122,7 @@ MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
     , m_rpcID(0)
 #endif
 {
+  bool is_retry_provisioning = false;
 #if defined(DEBUG)  
   ENT_WV;
   cout << "\n[RDK_LOG]" << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << "\tGoing to createSession with licenseType: " << m_licenseType << " and sessionId: " << m_sessionId.c_str() << endl;
@@ -152,6 +153,7 @@ MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
   // Below steps are to done for provisioning when you get the return error "kNeedsDeviceCertificate" (101)
   // from cdm->createSession() function call
   if(status == 101) {
+retry_provision:
 #if defined(DEBUG)
         cout << "\n[RDK_LOG]" << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << "Session creation failed with error \"kNeedsDeviceCertificate\" (101)" << endl;
 #endif
@@ -185,6 +187,18 @@ MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
 #if defined(DEBUG)
         cout << "\n[RDK_LOG]" << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << "\tResult of createSession() is: " <<  status << endl;
 #endif
+        if(status != widevine::Cdm::kSuccess) {
+            cout << "createSession fail with %d" << status << endl;
+            if(status == 101) { // May retry
+                if(is_retry_provisioning) {
+                    cout << "createSession fail with %d " << status << "in the second attempt!" << endl;
+                } else {
+                    is_retry_provisioning = true;
+                    cout << "createSession fail with %d " << status << "in the first attempt, try again" << endl;
+                    goto retry_provision;
+                }
+            }
+        }
   }
 
   ::memset(m_IV, 0 , sizeof(m_IV));;
