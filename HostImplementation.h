@@ -121,7 +121,7 @@ public:
 #endif
 
 private:
-  WPEFramework::Core::TimerType<Timer> _timer;
+  Thunder::Core::TimerType<Timer> _timer;
   StorageMap _cache;
   std::string _basepath;
 };

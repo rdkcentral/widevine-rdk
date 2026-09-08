@@ -25,7 +25,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 using namespace widevine;
-using namespace WPEFramework;
+using namespace Thunder;
 
 namespace CDMi {
 

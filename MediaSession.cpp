@@ -106,7 +106,7 @@ std::string& response)
 
 }
 
-WPEFramework::Core::CriticalSection g_lock;
+Thunder::Core::CriticalSection g_lock;
 
 MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
     : m_cdm(cdm)

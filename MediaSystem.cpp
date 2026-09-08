@@ -31,7 +31,7 @@ using namespace std;
 #define ENT_WV std::cout << "[RDK_LOG]Entering " << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << endl
 #define EXT_WV std::cout << "[RDK_LOG]Exiting " << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << endl
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 namespace CDMi {
 
@@ -140,7 +140,7 @@ public:
 #endif
     }
 
-    void Initialize(const WPEFramework::PluginHost::IShell * shell, const std::string& configline)
+    void Initialize(const Thunder::PluginHost::IShell * shell, const std::string& configline)
     {
 #if defined(DEBUG)
 	ENT_WV;
@@ -165,7 +165,7 @@ public:
         if (config.Product.IsSet() == true) {
             client_info.product_name = config.Product.Value();
         } else {
-            client_info.product_name = "WPEFramework";
+            client_info.product_name = "Thunder";
         }
 
         if (config.Company.IsSet() == true) {
@@ -480,7 +480,7 @@ public:
     }
 
 private:
-    WPEFramework::Core::CriticalSection _adminLock;
+    Thunder::Core::CriticalSection _adminLock;
     widevine::Cdm* _cdm;
     HostImplementation _host;
     SessionMap _sessions;
