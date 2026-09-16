@@ -40,7 +40,7 @@ classDef VL stroke:#808080,fill:#F2F2F2,stroke-width:2px;
     Rialto -->|CDMi decrypt calls| OCDM
     WV -->|widevine::Cdm APIs| WVCDM
     WV -->|SVP context / secure buffer APIs| SVP
-    WV -->|Provisioning HTTP(S)| Cloud["Provisioning Server"]
+    WV -->|"Provisioning HTTP(S)"| Cloud["Provisioning Server"]
 ```
 
 **Key Features & Responsibilities:**
