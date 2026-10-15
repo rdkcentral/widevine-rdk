@@ -18,7 +18,7 @@
 
 #include "string_conversions.h"
 
-#if (WIDEVINE_VERSION == 17) || (WIDEVINE_VERSION == 18)
+#if (WIDEVINE_VERSION == 17) || (WIDEVINE_VERSION >= 18)
 using namespace wvutil;
 #else
 using namespace wvcdm;
