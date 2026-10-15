@@ -210,7 +210,7 @@ public:
         if (widevine::Cdm::kSuccess == widevine::Cdm::initialize(
 #if (WIDEVINE_VERSION == 17)
                 widevine::Cdm::kOpaqueHandle, &_host, &_host, &_host,
-#elif(WIDEVINE_VERSION == 18)
+#elif(WIDEVINE_VERSION == 18 || WIDEVINE_VERSION == 19)
                 widevine::Cdm::kOpaqueHandle, &_host, &_host, &_host, &_host,
 #else
                 widevine::Cdm::kOpaqueHandle, client_info, &_host, &_host, &_host,
@@ -372,7 +372,7 @@ public:
         return CDMi_SUCCESS;
     }
 
-#if (WIDEVINE_VERSION == 18)
+#if (WIDEVINE_VERSION == 18 || WIDEVINE_VERSION == 19)
     virtual void onMessage(const std::string& session_id,
         widevine::Cdm::MessageType f_messageType,
         const std::string& f_message,
@@ -404,7 +404,7 @@ public:
 
     }
 
-#if (WIDEVINE_VERSION == 18)
+#if (WIDEVINE_VERSION == 18 || WIDEVINE_VERSION == 19)
     virtual void onExpirationChange(const std::string& session_id,  int64_t NewExpiration) override
     {
     }
