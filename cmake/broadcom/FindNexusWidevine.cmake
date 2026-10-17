@@ -49,7 +49,7 @@ if(NOT LIBNexusWidevine_LIBRARY)
 endif()
 
 # needed libs
-if (WIDEVINE_VERSION GREATER_EQUAL  16)
+if ((WIDEVINE_VERSION GREATER 16) OR (WIDEVINE_VERSION EQUAL 16))
   list(APPEND NeededLibs protobuf-lite widevine_tl crypto oemcrypto_tl)
 else ()
   list(APPEND NeededLibs protobuf-lite cmndrm cmndrm_tl crypto oemcrypto_tl)
