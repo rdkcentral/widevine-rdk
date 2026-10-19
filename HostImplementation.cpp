@@ -33,7 +33,7 @@ HostImplementation::HostImplementation()
   : widevine::Cdm::IStorage()
   , widevine::Cdm::IClock()
   , widevine::Cdm::ITimer()
-#if (WIDEVINE_VERSION == 18)
+#if (WIDEVINE_VERSION >= 18)
   , widevine::Cdm::ILogger()
 #endif
   , _timer(Core::Thread::DefaultStackSize(),  _T("widevine"))
@@ -270,8 +270,8 @@ bool HostImplementation::writeToFile(const std::string& name, const std::string&
   _timer.Revoke(Timer(client, nullptr));
 }
 
-#if (WIDEVINE_VERSION == 18)
-// widevine::Cdm::IClock implementation
+#if (WIDEVINE_VERSION >= 18)
+// widevine::Cdm::ILogger implementation
 // ---------------------------------------------------------------------------
 /* virtual */ void HostImplementation::log(const std::string& message) {
   return;

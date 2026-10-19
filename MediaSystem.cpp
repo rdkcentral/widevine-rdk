@@ -210,16 +210,14 @@ public:
         if (widevine::Cdm::kSuccess == widevine::Cdm::initialize(
 #if (WIDEVINE_VERSION == 17)
                 widevine::Cdm::kOpaqueHandle, &_host, &_host, &_host,
-#elif(WIDEVINE_VERSION == 18)
+#elif(WIDEVINE_VERSION >= 18)
                 widevine::Cdm::kOpaqueHandle, &_host, &_host, &_host, &_host,
 #else
                 widevine::Cdm::kOpaqueHandle, client_info, &_host, &_host, &_host,
 #endif
                 static_cast<widevine::Cdm::LogLevel>(0))) {
             _cdm = widevine::Cdm::create(this, &_host, false);
-#if defined(DEBUG)
-	    cout << "\n[RDK_LOG:" << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << "] widevine cdm version is: " << _cdm->version << endl;
-#endif
+	    cout << "\n[RDK_LOG:" << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << "] widevine cdm version is: " << _cdm->version() << endl;
         }
 
         const char kPrefixStr[] = "COBALT_CERT_SCOPE=";
@@ -372,7 +370,7 @@ public:
         return CDMi_SUCCESS;
     }
 
-#if (WIDEVINE_VERSION == 18)
+#if (WIDEVINE_VERSION >= 18)
     virtual void onMessage(const std::string& session_id,
         widevine::Cdm::MessageType f_messageType,
         const std::string& f_message,
@@ -404,7 +402,7 @@ public:
 
     }
 
-#if (WIDEVINE_VERSION == 18)
+#if (WIDEVINE_VERSION >= 18)
     virtual void onExpirationChange(const std::string& session_id,  int64_t NewExpiration) override
     {
     }
