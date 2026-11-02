@@ -35,6 +35,7 @@ using namespace WPEFramework;
 
 namespace CDMi {
 
+auto& platform = drm_platform::DRMPlatform::instance();
 std::string ReadFromPropertiesFile(const char* prefix, size_t prefix_len) {
     FILE* properties = fopen("/etc/device.properties", "r");
     if (!properties) {
@@ -147,7 +148,7 @@ public:
 #endif
         widevine::Cdm::ClientInfo client_info;
 
-        svpPlatformInitializeWidevine();
+        platform.platformInitializeWidevine();
 
         Config config;
         config.FromString(configline);

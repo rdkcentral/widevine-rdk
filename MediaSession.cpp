@@ -42,6 +42,7 @@ using namespace std;
 #define ENT_WV std::cout << "[RDK_LOG:Entering " << __FILE__ << "(" << __LINE__ << "):" << __FUNCTION__ << "]" << endl
 #define EXT_WV std::cout << "[RDK_LOG:Exiting " << __FILE__ << "(" << __LINE__ << "):" << __FUNCTION__ << "]" << endl
 
+extern drm_platform::DRMPlatform platform;
 namespace CDMi {
 
 #if defined WIDEVINE_DEFAULT_SERVER_CERTIFICATE_SUPPORTED
@@ -728,7 +729,7 @@ CDMi_RESULT MediaKeySession::Decrypt(
   }
     
 #ifdef USE_SVP
-  bIsDynamicSVPEncEnabled = svpIsDynamicSVPEncEnabled();
+  bIsDynamicSVPEncEnabled = platform.isDynamicSvpEncryptionEnabled();
   if (bIsDynamicSVPEncEnabled)
   {
     /* Dynamic SVP supported means, SVP is enabled for Video only */
