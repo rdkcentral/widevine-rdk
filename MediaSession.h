@@ -22,7 +22,7 @@
 #ifdef USE_SVP
 #include "gst_svp_meta.h"
 #endif
-#include "DRMPlatform.h"
+#include "drm_platform/DRMPlatform.h"
 
 namespace CDMi
 {
