@@ -42,7 +42,7 @@ using namespace std;
 #define ENT_WV std::cout << "[RDK_LOG:Entering " << __FILE__ << "(" << __LINE__ << "):" << __FUNCTION__ << "]" << endl
 #define EXT_WV std::cout << "[RDK_LOG:Exiting " << __FILE__ << "(" << __LINE__ << "):" << __FUNCTION__ << "]" << endl
 
-extern drm_platform::DRMPlatform platform;
+
 namespace CDMi {
 
 #if defined WIDEVINE_DEFAULT_SERVER_CERTIFICATE_SUPPORTED
@@ -707,7 +707,7 @@ CDMi_RESULT MediaKeySession::Decrypt(
   g_lock.Lock();
   widevine::Cdm::KeyStatusMap map;
   std::string keyStatus;
-
+  auto& platform = drm_platform::DRMPlatform::instance();
   void *pEncryptedDataStart  = nullptr;
   widevine::Cdm::Subsample subsamplesInfo[ 2 ];
   CDMi_RESULT status = CDMi_S_FALSE;

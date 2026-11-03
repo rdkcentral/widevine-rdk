@@ -35,7 +35,6 @@ using namespace WPEFramework;
 
 namespace CDMi {
 
-auto& platform = drm_platform::DRMPlatform::instance();
 std::string ReadFromPropertiesFile(const char* prefix, size_t prefix_len) {
     FILE* properties = fopen("/etc/device.properties", "r");
     if (!properties) {
@@ -147,6 +146,10 @@ public:
 	ENT_WV;
 #endif
         widevine::Cdm::ClientInfo client_info;
+        auto& platform = drm_platform::DRMPlatform::instance();
+
+        cout << "\n[RDK_LOG:" << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << "] DRM Extended Platform init calling " << endl;
+        platform.init();
 
         platform.platformInitializeWidevine();
 
