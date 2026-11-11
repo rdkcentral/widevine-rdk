@@ -75,8 +75,7 @@ target_link_libraries(${DRM_PLUGIN_NAME}
             ${NAMESPACE}Core::${NAMESPACE}Core
             ${WIDEVINE_LIBRARIES}
             -lgstsvpext
-            -lDRMPlatform
-            -lDRMPlatformSoC)
+            -lDRMPlatform)
 
 if(DEFINED WIDEVINE_REALTEK)
     target_link_libraries(${DRM_PLUGIN_NAME} PRIVATE liboemcrypto.so crypto curl ssl rt pthread)
