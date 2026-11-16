@@ -74,8 +74,11 @@ target_link_libraries(${DRM_PLUGIN_NAME}
             PRIVATE
             ${NAMESPACE}Core::${NAMESPACE}Core
             ${WIDEVINE_LIBRARIES}
-            -lgstsvpext
-            -lDRMPlatform)
+            -lgstsvpext)
+
+if ("${OCDM_DRM_EXT_ENABLED}" STREQUAL "ON")
+    target_link_libraries(${DRM_PLUGIN_NAME} PRIVATE -lDRMPlatform)
+endif()
 
 if(DEFINED WIDEVINE_REALTEK)
     target_link_libraries(${DRM_PLUGIN_NAME} PRIVATE liboemcrypto.so crypto curl ssl rt pthread)

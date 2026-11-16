@@ -22,7 +22,10 @@
 #ifdef USE_SVP
 #include "gst_svp_meta.h"
 #endif
+
+#if defined OCDM_DRM_EXT_ENABLED
 #include "drm_platform/DRMPlatform.h"
+#endif
 
 namespace CDMi
 {

@@ -707,7 +707,9 @@ CDMi_RESULT MediaKeySession::Decrypt(
   g_lock.Lock();
   widevine::Cdm::KeyStatusMap map;
   std::string keyStatus;
+#if defined OCDM_DRM_EXT_ENABLED
   auto& platform = drm_platform::DRMPlatform::instance();
+#endif
   void *pEncryptedDataStart  = nullptr;
   widevine::Cdm::Subsample subsamplesInfo[ 2 ];
   CDMi_RESULT status = CDMi_S_FALSE;
@@ -729,7 +731,12 @@ CDMi_RESULT MediaKeySession::Decrypt(
   }
     
 #ifdef USE_SVP
+#if defined OCDM_DRM_EXT_ENABLED
   bIsDynamicSVPEncEnabled = platform.isDynamicSvpEncryptionEnabled();
+#else
+  bIsDynamicSVPEncEnabled = svpIsDynamicSVPEncEnabled();
+#endif
+
   if (bIsDynamicSVPEncEnabled)
   {
     /* Dynamic SVP supported means, SVP is enabled for Video only */
