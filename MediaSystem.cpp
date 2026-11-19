@@ -146,8 +146,16 @@ public:
 	ENT_WV;
 #endif
         widevine::Cdm::ClientInfo client_info;
+#if defined OCDM_DRM_EXT_ENABLED
+        auto& platform = drm_platform::DRMPlatform::instance();
 
+        cout << "\n[RDK_LOG:" << __FILE__ << "(" << __LINE__ << ")" << __FUNCTION__ << "] DRM Extended Platform init calling " << endl;
+        platform.init();
+
+        platform.platformInitializeWidevine();
+#else
         svpPlatformInitializeWidevine();
+#endif
 
         Config config;
         config.FromString(configline);

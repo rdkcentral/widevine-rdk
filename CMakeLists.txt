@@ -76,6 +76,13 @@ target_link_libraries(${DRM_PLUGIN_NAME}
             ${WIDEVINE_LIBRARIES}
             -lgstsvpext)
 
+if ("${OCDM_DRM_EXT_ENABLED}" STREQUAL "ON")
+    target_compile_definitions(${DRM_PLUGIN_NAME} PRIVATE OCDM_DRM_EXT_ENABLED)
+    target_link_libraries(${DRM_PLUGIN_NAME} PRIVATE -lDRMPlatform)
+else()
+    target_compile_definitions(${DRM_PLUGIN_NAME} PRIVATE OCDM_DRM_EXT_NOT_ENABLED)
+endif()
+
 if(DEFINED WIDEVINE_REALTEK)
     target_link_libraries(${DRM_PLUGIN_NAME} PRIVATE liboemcrypto.so crypto curl ssl rt pthread)
     message(STATUS "WIDEVINE_REALTEK is ON")
